@@ -26,10 +26,11 @@ public final class AuthContext {
         return user;
     }
 
-    public static void requireOperator() {
+    public static AuthUser requireOperator() {
         AuthUser user = require();
         if (!user.isOperator()) {
             throw new com.clearing.netting.domain.exception.DomainException("FORBIDDEN", "operator role required");
         }
+        return user;
     }
 }

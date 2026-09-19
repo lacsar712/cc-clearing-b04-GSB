@@ -49,8 +49,21 @@
         </el-table-column>
         <el-table-column prop="settleDate" label="交割日" width="120" />
         <el-table-column prop="currency" label="币种" width="90" />
-        <el-table-column prop="status" label="状态" width="120" />
-        <el-table-column prop="failureReason" label="失败原因" min-width="180" />
+        <el-table-column prop="status" label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag :type="statusType(row.status)">{{ row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="Settle 信息" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            <template v-if="row.status === 'SETTLED'">
+              <el-tag type="success" size="small" effect="plain">已 settle</el-tag>
+              <span style="margin-left:6px">{{ row.settledBy }} · {{ row.settleNote }}</span>
+            </template>
+            <span v-else-if="row.failureReason" style="color:var(--el-color-danger)">{{ row.failureReason }}</span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
   </div>
@@ -73,6 +86,13 @@ const memberMap = ref({})
 
 function nameOf(id) {
   return memberMap.value[id] || ''
+}
+
+function statusType(s) {
+  if (s === 'COMPLETED' || s === 'SETTLED') return 'success'
+  if (s === 'FAILED') return 'danger'
+  if (s === 'RUNNING') return 'warning'
+  return 'info'
 }
 
 async function loadRuns() {

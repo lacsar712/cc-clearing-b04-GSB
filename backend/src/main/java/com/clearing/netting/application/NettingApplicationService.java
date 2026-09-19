@@ -118,10 +118,20 @@ public class NettingApplicationService {
     }
 
     @Transactional
-    public NettingRun settle(String runId) {
+    public NettingRun settle(String runId, String note, String operator) {
+        if (note == null || note.isBlank()) {
+            throw new DomainException("SETTLE_NOTE_REQUIRED", "settle note is required and must not be blank");
+        }
         NettingRun run = getRun(runId);
+        if (run.getStatus() == NettingRunStatus.SETTLED) {
+            throw new DomainException("ALREADY_SETTLED", "run already settled, duplicate settle rejected");
+        }
+        if (run.getStatus() == NettingRunStatus.FAILED) {
+            throw new DomainException("INVALID_STATE", "FAILED run cannot be settled");
+        }
         if (run.getStatus() != NettingRunStatus.COMPLETED) {
-            throw new DomainException("INVALID_STATE", "only COMPLETED runs can be settled");
+            throw new DomainException("INVALID_STATE",
+                    "run is not COMPLETED yet (status=" + run.getStatus() + "), settle rejected");
         }
         List<TradeObligation> obligations = obligationRepository.findByNettingRunId(runId);
         if (obligations.isEmpty()) {
@@ -135,7 +145,8 @@ public class NettingApplicationService {
             }
         }
         obligationRepository.saveAll(obligations);
-        return run;
+        run.markSettled(operator, note.trim());
+        return runRepository.save(run);
     }
 
     public record NettingRunResult(NettingRun run, List<NetPosition> positions, List<TradeObligation> obligations) {

@@ -12,6 +12,9 @@ public class NettingRun {
     private NettingRunStatus status;
     private final Instant createdAt;
     private String failureReason;
+    private Instant settledAt;
+    private String settledBy;
+    private String settleNote;
 
     public NettingRun(
             String runId,
@@ -19,13 +22,19 @@ public class NettingRun {
             String currency,
             NettingRunStatus status,
             Instant createdAt,
-            String failureReason) {
+            String failureReason,
+            Instant settledAt,
+            String settledBy,
+            String settleNote) {
         this.runId = Objects.requireNonNull(runId);
         this.settleDate = Objects.requireNonNull(settleDate);
         this.currency = Objects.requireNonNull(currency).toUpperCase();
         this.status = Objects.requireNonNull(status);
         this.createdAt = Objects.requireNonNull(createdAt);
         this.failureReason = failureReason;
+        this.settledAt = settledAt;
+        this.settledBy = settledBy;
+        this.settleNote = settleNote;
     }
 
     public static NettingRun create(LocalDate settleDate, String currency) {
@@ -35,6 +44,9 @@ public class NettingRun {
                 currency,
                 NettingRunStatus.CREATED,
                 Instant.now(),
+                null,
+                null,
+                null,
                 null);
     }
 
@@ -50,6 +62,16 @@ public class NettingRun {
     public void markFailed(String reason) {
         this.status = NettingRunStatus.FAILED;
         this.failureReason = reason;
+    }
+
+    public void markSettled(String operator, String note) {
+        if (status != NettingRunStatus.COMPLETED) {
+            throw new IllegalStateException("only COMPLETED runs can be settled");
+        }
+        this.status = NettingRunStatus.SETTLED;
+        this.settledAt = Instant.now();
+        this.settledBy = operator;
+        this.settleNote = note;
     }
 
     public String getRunId() {
@@ -74,5 +96,17 @@ public class NettingRun {
 
     public String getFailureReason() {
         return failureReason;
+    }
+
+    public Instant getSettledAt() {
+        return settledAt;
+    }
+
+    public String getSettledBy() {
+        return settledBy;
+    }
+
+    public String getSettleNote() {
+        return settleNote;
     }
 }

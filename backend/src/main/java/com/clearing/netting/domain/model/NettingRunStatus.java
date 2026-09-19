@@ -4,5 +4,6 @@ public enum NettingRunStatus {
     CREATED,
     RUNNING,
     COMPLETED,
-    FAILED
+    FAILED,
+    SETTLED
 }

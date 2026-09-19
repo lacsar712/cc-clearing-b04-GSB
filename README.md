@@ -48,8 +48,9 @@ docker compose down
 4. 「义务」页筛选 OPEN 义务，或新建一笔同币种义务
 5. 「轧差执行」选择 settleDate + currency（如 USD），执行轧差
 6. 确认净头寸表 ΣnetAmount = 0，批次状态 COMPLETED
-7. 进入批次详情，点击 Settle，义务变为 SETTLED
-8. 使用 `viewer` 登录，确认只能浏览、无法执行写操作
+7. 进入批次详情，点击「确认 Settle」，在确认框中填写必填备注后提交；批次变为 SETTLED，义务变为 SETTLED，详情与批次列表可回看备注、操作员与 settle 时间
+8. 对 FAILED 或进行中的批次，Settle 按钮不可用；直接调用 `POST /api/netting-runs/{id}/settle` 也会被 4xx 拒绝
+9. 使用 `viewer` 登录，确认只能浏览、无 Settle 按钮、无法执行写操作
 
 健康检查：
 

@@ -1,6 +1,7 @@
 package com.clearing.netting.adapter.in.web;
 
 import com.clearing.netting.adapter.in.web.auth.AuthContext;
+import com.clearing.netting.adapter.in.web.auth.AuthUser;
 import com.clearing.netting.application.NettingApplicationService;
 import com.clearing.netting.domain.model.NetPosition;
 import com.clearing.netting.domain.model.NettingRun;
@@ -70,9 +71,9 @@ public class NettingRunController {
     }
 
     @PostMapping("/{id}/settle")
-    public RunResponse settle(@PathVariable("id") String id) {
-        AuthContext.requireOperator();
-        return RunResponse.from(nettingService.settle(id));
+    public RunResponse settle(@PathVariable("id") String id, @Valid @RequestBody SettleRequest request) {
+        AuthUser operator = AuthContext.requireOperator();
+        return RunResponse.from(nettingService.settle(id, request.note(), operator.username()));
     }
 
     private BigDecimal sumNet(List<NetPosition> positions) {
@@ -84,13 +85,19 @@ public class NettingRunController {
     public record ExecuteRequest(@NotNull LocalDate settleDate, @NotBlank String currency) {
     }
 
+    public record SettleRequest(@NotBlank(message = "settle note is required and must not be blank") String note) {
+    }
+
     public record RunResponse(
             String runId,
             LocalDate settleDate,
             String currency,
             NettingRunStatus status,
             Instant createdAt,
-            String failureReason) {
+            String failureReason,
+            Instant settledAt,
+            String settledBy,
+            String settleNote) {
         static RunResponse from(NettingRun r) {
             return new RunResponse(
                     r.getRunId(),
@@ -98,7 +105,10 @@ public class NettingRunController {
                     r.getCurrency(),
                     r.getStatus(),
                     r.getCreatedAt(),
-                    r.getFailureReason());
+                    r.getFailureReason(),
+                    r.getSettledAt(),
+                    r.getSettledBy(),
+                    r.getSettleNote());
         }
     }
 

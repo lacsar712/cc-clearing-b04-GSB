@@ -59,7 +59,7 @@ const openAmount = computed(() =>
 const currencies = computed(() => [...new Set(opens.value.map((o) => o.currency))].join(', '))
 
 function statusType(s) {
-  if (s === 'COMPLETED') return 'success'
+  if (s === 'COMPLETED' || s === 'SETTLED') return 'success'
   if (s === 'FAILED') return 'danger'
   if (s === 'RUNNING') return 'warning'
   return 'info'
