@@ -3,6 +3,7 @@ package com.clearing.netting.adapter.in.web;
 import com.clearing.netting.adapter.in.web.dto.ErrorResponse;
 import com.clearing.netting.domain.exception.DomainException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,6 +27,12 @@ public class GlobalExceptionHandler {
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .collect(Collectors.toList());
         return ResponseEntity.badRequest().body(ErrorResponse.of("VALIDATION_ERROR", "validation failed", details));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of("VALIDATION_ERROR", "malformed or missing request body"));
     }
 
     @ExceptionHandler(Exception.class)

@@ -7,10 +7,10 @@
       <el-button @click="$router.back()">返回</el-button>
       <el-button @click="load">刷新</el-button>
       <el-button
+        v-if="auth.isOperator && detail?.run?.status === 'COMPLETED'"
         type="success"
-        :disabled="!auth.isOperator || detail?.run?.status !== 'COMPLETED' || alreadySettled"
         :loading="settling"
-        @click="settle"
+        @click="openSettleDialog"
       >确认 Settle</el-button>
     </div>
 
@@ -19,14 +19,21 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="Run ID"><span class="mono">{{ detail.run.runId }}</span></el-descriptions-item>
           <el-descriptions-item label="状态">
-            <el-tag :type="detail.run.status === 'COMPLETED' ? 'success' : detail.run.status === 'FAILED' ? 'danger' : 'info'">
-              {{ detail.run.status }}
-            </el-tag>
+            <el-tag :type="statusTagType(detail.run.status)">{{ detail.run.status }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="交割日">{{ detail.run.settleDate }}</el-descriptions-item>
           <el-descriptions-item label="币种">{{ detail.run.currency }}</el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ formatTime(detail.run.createdAt) }}</el-descriptions-item>
           <el-descriptions-item label="ΣnetAmount">{{ detail.sumNetAmount }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.run.status === 'SETTLED'" label="Settle 时间">
+            {{ formatTime(detail.run.settledAt) }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.run.status === 'SETTLED'" label="Settle 操作员">
+            <span class="mono">{{ detail.run.settledBy }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.run.status === 'SETTLED'" label="Settle 备注" :span="2">
+            {{ detail.run.settleRemark }}
+          </el-descriptions-item>
           <el-descriptions-item v-if="detail.run.failureReason" label="失败原因" :span="2">
             {{ detail.run.failureReason }}
           </el-descriptions-item>
@@ -53,11 +60,52 @@
         </el-table>
       </template>
     </div>
+
+    <el-dialog
+      v-model="dialogVisible"
+      title="确认 Settle 批次"
+      width="520px"
+      :close-on-click-modal="false"
+      @closed="remark = ''"
+    >
+      <el-alert
+        type="warning"
+        :closable="false"
+        show-icon
+        style="margin-bottom:16px"
+        title="Settle 后批次与义务状态不可回退，请二次确认。"
+      />
+      <div style="margin-bottom:6px">
+        批次 <span class="mono">{{ detail?.run?.runId }}</span>
+        （{{ detail?.run?.settleDate }} {{ detail?.run?.currency }}）
+      </div>
+      <el-form @submit.prevent>
+        <el-form-item label="Settle 备注" required>
+          <el-input
+            v-model="remark"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="必填：请填写结算依据/确认说明，空备注无法提交"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button
+          type="success"
+          :loading="settling"
+          :disabled="!remark.trim()"
+          @click="confirmSettle"
+        >确认 Settle</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import api from '../api/client'
@@ -69,10 +117,15 @@ const loading = ref(false)
 const settling = ref(false)
 const detail = ref(null)
 
-const alreadySettled = computed(() =>
-  (detail.value?.obligations || []).every((o) => o.status === 'SETTLED') &&
-  (detail.value?.obligations || []).length > 0
-)
+const dialogVisible = ref(false)
+const remark = ref('')
+
+function statusTagType(status) {
+  if (status === 'SETTLED') return 'success'
+  if (status === 'COMPLETED') return 'warning'
+  if (status === 'FAILED') return 'danger'
+  return 'info'
+}
 
 function formatTime(v) {
   return v ? new Date(v).toLocaleString() : '-'
@@ -88,11 +141,22 @@ async function load() {
   }
 }
 
-async function settle() {
+function openSettleDialog() {
+  remark.value = ''
+  dialogVisible.value = true
+}
+
+async function confirmSettle() {
+  // 前端必填校验：空白备注一律不放行
+  if (!remark.value.trim()) {
+    ElMessage.warning('Settle 备注为必填项')
+    return
+  }
   settling.value = true
   try {
-    await api.post(`/netting-runs/${route.params.id}/settle`)
+    await api.post(`/netting-runs/${route.params.id}/settle`, { remark: remark.value.trim() })
     ElMessage.success('Settle 完成，义务已 SETTLED')
+    dialogVisible.value = false
     await load()
   } finally {
     settling.value = false

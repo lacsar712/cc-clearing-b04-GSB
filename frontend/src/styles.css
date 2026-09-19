@@ -58,3 +58,17 @@ a {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
 }
+
+.muted {
+  color: var(--muted);
+}
+
+.settle-remark {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

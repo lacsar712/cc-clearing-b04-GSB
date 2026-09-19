@@ -4,7 +4,6 @@ import com.clearing.netting.domain.exception.DomainException;
 import com.clearing.netting.domain.model.Member;
 import com.clearing.netting.domain.model.NetPosition;
 import com.clearing.netting.domain.model.NettingRun;
-import com.clearing.netting.domain.model.NettingRunStatus;
 import com.clearing.netting.domain.model.ObligationStatus;
 import com.clearing.netting.domain.model.TradeObligation;
 import com.clearing.netting.domain.port.out.MemberRepositoryPort;
@@ -118,11 +117,14 @@ public class NettingApplicationService {
     }
 
     @Transactional
-    public NettingRun settle(String runId) {
-        NettingRun run = getRun(runId);
-        if (run.getStatus() != NettingRunStatus.COMPLETED) {
-            throw new DomainException("INVALID_STATE", "only COMPLETED runs can be settled");
+    public NettingRun settle(String runId, String remark, String operator) {
+        if (remark == null || remark.isBlank()) {
+            throw new DomainException("REMARK_REQUIRED", "settle remark is required");
         }
+        NettingRun run = getRun(runId);
+        // State guard on the aggregate first: only COMPLETED runs can be settled and
+        // a non-blank remark is mandatory. FAILED/RUNNING/SETTLED are rejected here.
+        run.markSettled(remark, operator);
         List<TradeObligation> obligations = obligationRepository.findByNettingRunId(runId);
         if (obligations.isEmpty()) {
             throw new DomainException("NO_OBLIGATIONS", "no obligations linked to run");
@@ -135,7 +137,7 @@ public class NettingApplicationService {
             }
         }
         obligationRepository.saveAll(obligations);
-        return run;
+        return runRepository.save(run);
     }
 
     public record NettingRunResult(NettingRun run, List<NetPosition> positions, List<TradeObligation> obligations) {

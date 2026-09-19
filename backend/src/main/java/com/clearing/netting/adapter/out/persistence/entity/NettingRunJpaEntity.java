@@ -35,6 +35,14 @@ public class NettingRunJpaEntity {
     @Column(length = 512)
     private String failureReason;
 
+    @Column(length = 512)
+    private String settleRemark;
+
+    private Instant settledAt;
+
+    @Column(length = 64)
+    private String settledBy;
+
     public String getRunId() {
         return runId;
     }
@@ -81,5 +89,29 @@ public class NettingRunJpaEntity {
 
     public void setFailureReason(String failureReason) {
         this.failureReason = failureReason;
+    }
+
+    public String getSettleRemark() {
+        return settleRemark;
+    }
+
+    public void setSettleRemark(String settleRemark) {
+        this.settleRemark = settleRemark;
+    }
+
+    public Instant getSettledAt() {
+        return settledAt;
+    }
+
+    public void setSettledAt(Instant settledAt) {
+        this.settledAt = settledAt;
+    }
+
+    public String getSettledBy() {
+        return settledBy;
+    }
+
+    public void setSettledBy(String settledBy) {
+        this.settledBy = settledBy;
     }
 }

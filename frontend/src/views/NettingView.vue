@@ -49,7 +49,21 @@
         </el-table-column>
         <el-table-column prop="settleDate" label="交割日" width="120" />
         <el-table-column prop="currency" label="币种" width="90" />
-        <el-table-column prop="status" label="状态" width="120" />
+        <el-table-column prop="status" label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag :type="statusTagType(row.status)">{{ row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="Settle 信息" min-width="240">
+          <template #default="{ row }">
+            <template v-if="row.status === 'SETTLED'">
+              <el-tag type="success" size="small" style="margin-right:8px">已 SETTLE</el-tag>
+              <span>{{ row.settledBy }} · {{ formatTime(row.settledAt) }}</span>
+              <div class="settle-remark" :title="row.settleRemark">{{ row.settleRemark }}</div>
+            </template>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="failureReason" label="失败原因" min-width="180" />
       </el-table>
     </div>
@@ -73,6 +87,17 @@ const memberMap = ref({})
 
 function nameOf(id) {
   return memberMap.value[id] || ''
+}
+
+function statusTagType(status) {
+  if (status === 'SETTLED') return 'success'
+  if (status === 'COMPLETED') return 'warning'
+  if (status === 'FAILED') return 'danger'
+  return 'info'
+}
+
+function formatTime(v) {
+  return v ? new Date(v).toLocaleString() : '-'
 }
 
 async function loadRuns() {

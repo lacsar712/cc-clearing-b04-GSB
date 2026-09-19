@@ -62,7 +62,10 @@ final class PersistenceMapper {
                 e.getCurrency(),
                 e.getStatus(),
                 e.getCreatedAt(),
-                e.getFailureReason());
+                e.getFailureReason(),
+                e.getSettleRemark(),
+                e.getSettledAt(),
+                e.getSettledBy());
     }
 
     static NettingRunJpaEntity toEntity(NettingRun r) {
@@ -73,6 +76,9 @@ final class PersistenceMapper {
         e.setStatus(r.getStatus());
         e.setCreatedAt(r.getCreatedAt());
         e.setFailureReason(r.getFailureReason());
+        e.setSettleRemark(r.getSettleRemark());
+        e.setSettledAt(r.getSettledAt());
+        e.setSettledBy(r.getSettledBy());
         return e;
     }
 
